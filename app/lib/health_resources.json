@@ -1,0 +1,105 @@
+{
+  "resources": [
+    {
+      "id": "mental-health-1",
+      "category": "Mental Health",
+      "title": "UMD Counseling Center",
+      "content": "The University of Maryland Counseling Center provides free, confidential mental health services to all UMD students. Services include individual counseling, group therapy, crisis intervention, and workshops. Located in Shoemaker Building. Hours: Monday-Friday 8:30am-5pm. Emergency services available 24/7 by calling 301-314-7651.",
+      "contact": "301-314-7651",
+      "location": "Shoemaker Building",
+      "website": "https://counseling.umd.edu"
+    },
+    {
+      "id": "mental-health-2",
+      "category": "Mental Health",
+      "title": "Crisis Support Services",
+      "content": "If you are experiencing a mental health crisis, UMD offers 24/7 crisis support. Call the Counseling Center at 301-314-7651 and press 1 for after-hours crisis support. For immediate danger, call 911 or go to the nearest emergency room. Additional resources: National Suicide Prevention Lifeline 988, Crisis Text Line: Text HOME to 741741.",
+      "contact": "301-314-7651 (Press 1) or 911",
+      "emergency": true
+    },
+    {
+      "id": "health-center-1",
+      "category": "Primary Care",
+      "title": "University Health Center",
+      "content": "The University Health Center provides comprehensive primary care services including routine checkups, immunizations, treatment for acute illnesses and injuries, gynecological care, and laboratory services. All registered UMD students can access these services. Location: Health Center Building. Walk-in hours: Monday-Friday 8am-4:30pm. Appointments recommended.",
+      "contact": "301-314-8180",
+      "location": "Health Center Building",
+      "website": "https://health.umd.edu"
+    },
+    {
+      "id": "health-center-2",
+      "category": "Sexual Health",
+      "title": "Sexual Health Services",
+      "content": "The Health Center offers confidential sexual and reproductive health services including STI testing and treatment, contraception counseling and prescriptions, emergency contraception, pregnancy testing and counseling, and HPV/Meningitis vaccinations. All services are confidential and available to UMD students.",
+      "contact": "301-314-8180",
+      "location": "Health Center Building"
+    },
+    {
+      "id": "wellness-1",
+      "category": "Wellness & Prevention",
+      "title": "Health Promotion Services",
+      "content": "Health Promotion offers wellness programs including stress management workshops, nutrition counseling, alcohol and drug education, sleep improvement programs, and mindfulness sessions. Free workshops held weekly. Check the website for current schedule and to register for programs.",
+      "contact": "301-314-5664",
+      "website": "https://health.umd.edu/promotion"
+    },
+    {
+      "id": "specialty-1",
+      "category": "Specialty Care",
+      "title": "Physical Therapy Services",
+      "content": "The Sports Medicine clinic offers physical therapy services for sports injuries, repetitive strain injuries, and general musculoskeletal conditions. Services include injury evaluation, treatment plans, and rehabilitation programs. Referral from Health Center provider required.",
+      "contact": "301-314-8141",
+      "location": "Eppley Recreation Center"
+    },
+    {
+      "id": "insurance-1",
+      "category": "Insurance & Billing",
+      "title": "Student Health Insurance",
+      "content": "All full-time students are automatically enrolled in the UMD Student Health Insurance Plan unless they provide proof of comparable coverage. The plan covers medical services, prescriptions, mental health services, and emergency care. For questions about coverage, claims, or waiving the insurance, contact Student Health Benefits.",
+      "contact": "855-241-7123",
+      "website": "https://health.umd.edu/insurance"
+    },
+    {
+      "id": "pharmacy-1",
+      "category": "Pharmacy",
+      "title": "Campus Pharmacy Services",
+      "content": "The on-campus pharmacy fills prescriptions from Health Center providers and outside doctors. They stock common medications, over-the-counter drugs, and health supplies. Most insurance plans accepted. Hours: Monday-Friday 9am-5pm. Location: Health Center Building, first floor.",
+      "contact": "301-314-8105",
+      "location": "Health Center Building, 1st Floor"
+    },
+    {
+      "id": "disability-1",
+      "category": "Accessibility Services",
+      "title": "Accessibility & Disability Services",
+      "content": "ADS provides accommodations and support services for students with disabilities. Services include note-taking assistance, extended test time, accessible housing, and assistive technology. Students must register with ADS to receive accommodations. All services are free and confidential.",
+      "contact": "301-314-7682",
+      "location": "Shoemaker Building 0106",
+      "website": "https://ads.umd.edu"
+    },
+    {
+      "id": "nutrition-1",
+      "category": "Nutrition",
+      "title": "Nutrition Counseling",
+      "content": "Registered dietitians provide free one-on-one nutrition counseling for UMD students. Services include weight management, sports nutrition, eating disorder support, food allergies and intolerances, and general healthy eating guidance. Schedule appointments through the Health Center.",
+      "contact": "301-314-8180",
+      "location": "Health Center Building"
+    }
+  ],
+  "categories": [
+    "Mental Health",
+    "Primary Care",
+    "Sexual Health",
+    "Wellness & Prevention",
+    "Specialty Care",
+    "Insurance & Billing",
+    "Pharmacy",
+    "Accessibility Services",
+    "Nutrition"
+  ],
+  "emergency_contacts": {
+    "campus_police": "911 or 301-405-3333",
+    "crisis_hotline": "301-314-7651",
+    "health_center_emergencies": "301-314-8180",
+    "national_suicide_prevention": "988",
+    "crisis_text_line": "Text HOME to 741741"
+  }
+}
