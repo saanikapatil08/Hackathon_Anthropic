@@ -35,7 +35,7 @@ export async function POST(req: Request) {
       .map((fac) => {
         const isOpen = calculateIsOpen(fac, persona.simulated_time, persona.simulated_day);
         const estimatedCost = calculateEstimatedCost(fac, persona);
-        return `ID: ${fac.id} | Name: ${fac.name} | Type: ${fac.type}\nNetwork: ${fac.network_status}\nHours: ${fac.hours_open}-${fac.hours_close} (${fac.days_open.join(",")})\nCurrently: ${isOpen ? "OPEN" : "CLOSED"}\nCapabilities: ${fac.capabilities.join(", ")}\nWait: ~${fac.wait_time_minutes} min\nEstimated cost for this patient: $${estimatedCost.toFixed(0)}\nAddress: ${fac.address || "On campus"}`;
+        return `ID: ${fac.id} | Name: ${fac.name} | Type: ${fac.type}\nNetwork: ${fac.network_status}\nHours: ${fac.hours_open}-${fac.hours_close} (${fac.days_open.join(",")})\nCurrently: ${isOpen ? "OPEN" : "CLOSED"}\nCapabilities: ${fac.capabilities.join(", ")}\nWait: ~${fac.wait_time_minutes} min\nEstimated cost for this patient: ${estimatedCost}\nAddress: ${fac.address || "On campus"}`;
       })
       .join("\n\n");
 
@@ -88,7 +88,7 @@ CRITICAL RULES:
 - Be specific with clinical reasoning; mention the patient's name`;
 
     const message = await anthropic.messages.create({
-      model: "claude-3-5-sonnet-20241022",
+      model: "claude-3-5-sonnet-latest",
       max_tokens: 2000,
       system: systemPrompt,
       messages: [{ role: "user", content: `Patient symptoms: ${symptoms}` }],
