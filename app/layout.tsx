@@ -3,12 +3,14 @@ import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import "./globals.css";
 import { ThemeProvider } from "@/components/theme-provider";
+import { PersonaProvider } from "@/app/lib/persona-context";
 
 const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
-  title: "AI Chat Assistant",
-  description: "Chat with an AI assistant powered by Anthropic",
+  title: "CareNav - Clinical and Financial Triage",
+  description:
+    "Tell us what's wrong. We'll show you the safest, cheapest, fastest place to get care - given your insurance and the time of day.",
 };
 
 export default function RootLayout({
@@ -21,11 +23,11 @@ export default function RootLayout({
       <body className={`${inter.className} flex flex-col h-full`}>
         <ThemeProvider
           attribute="class"
-          defaultTheme="system"
+          defaultTheme="light"
           enableSystem
           disableTransitionOnChange
         >
-          {children}
+          <PersonaProvider>{children}</PersonaProvider>
         </ThemeProvider>
       </body>
     </html>

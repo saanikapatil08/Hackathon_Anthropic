@@ -1,0 +1,43 @@
+{
+  "facilities": [
+    {
+      "id": "f1",
+      "type": "Urgent Care",
+      "name": "City Health Urgent Care",
+      "network_status": "In-Network",
+      "hours_label": "8:00 AM - 8:00 PM",
+      "open_hour": 8,
+      "close_hour": 20,
+      "open_days": [1, 2, 3, 4, 5, 6],
+      "typical_wait_minutes": 30,
+      "base_charge": 350,
+      "capabilities": ["X-Ray", "Stitches", "Viral Tests", "IV Fluids", "Basic Labs"]
+    },
+    {
+      "id": "f2",
+      "type": "Emergency Room",
+      "name": "General Hospital ER",
+      "network_status": "In-Network",
+      "hours_label": "Open 24/7",
+      "open_hour": 0,
+      "close_hour": 24,
+      "open_days": [0, 1, 2, 3, 4, 5, 6],
+      "typical_wait_minutes": 240,
+      "base_charge": 2500,
+      "capabilities": ["Trauma", "Surgery", "Life-Threatening", "Imaging", "Specialists"]
+    },
+    {
+      "id": "f3",
+      "type": "Telehealth",
+      "name": "CareNav Virtual Docs",
+      "network_status": "In-Network",
+      "hours_label": "Open 24/7",
+      "open_hour": 0,
+      "close_hour": 24,
+      "open_days": [0, 1, 2, 3, 4, 5, 6],
+      "typical_wait_minutes": 10,
+      "base_charge": 75,
+      "capabilities": ["Consultation", "Prescriptions", "Viral Triage", "Mental Health"]
+    }
+  ]
+}

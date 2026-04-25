@@ -1,0 +1,36 @@
+{
+  "personas": [
+    {
+      "id": "1",
+      "name": "Alex",
+      "blurb": "Low-income student, watching every dollar.",
+      "insurance_type": "HDHP",
+      "deductible_total": 2500,
+      "deductible_remaining": 2000,
+      "urgent_care_copay": 0,
+      "er_copay": 0,
+      "telehealth_copay": 0,
+      "coinsurance_percentage": 20,
+      "bank_balance": 500,
+      "location": "Downtown",
+      "current_time": "2026-04-21T14:00:00",
+      "current_time_label": "Tuesday 2:00 PM"
+    },
+    {
+      "id": "2",
+      "name": "Jordan",
+      "blurb": "Parent with a premium PPO, kid is sick on a Sunday night.",
+      "insurance_type": "PPO",
+      "deductible_total": 500,
+      "deductible_remaining": 0,
+      "urgent_care_copay": 40,
+      "er_copay": 250,
+      "telehealth_copay": 0,
+      "coinsurance_percentage": 0,
+      "bank_balance": 4200,
+      "location": "Suburbs",
+      "current_time": "2026-04-26T20:00:00",
+      "current_time_label": "Sunday 8:00 PM"
+    }
+  ]
+}
