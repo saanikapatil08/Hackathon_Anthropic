@@ -1,129 +1,218 @@
 import Anthropic from "@anthropic-ai/sdk";
-import { NextResponse } from "next/server";
-import { personas, facilities } from "@/lib/mockData";
-import { calculateIsOpen, calculateEstimatedCost, retrieveContext } from "@/lib/utils";
-import { TriageResult } from "@/types";
+import { z } from "zod";
+import {
+  detectEmergency,
+  estimateCost,
+  facilities,
+  getPersona,
+  isFacilityOpen,
+  mockTriage,
+  type Persona,
+  type TriageResponse,
+} from "@/app/lib/triage";
 
-const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
+const requestSchema = z.object({
+  symptom: z.string().min(1).max(2000),
+  personaId: z.string(),
+});
 
-export async function POST(req: Request) {
-  try {
-    const body = await req.json();
-    const { symptoms, personaId } = body;
+const optionSchema = z.object({
+  tier: z.enum(["recommended", "alternative", "not_recommended"]),
+  facility_id: z.string(),
+  headline: z.string(),
+  reasoning: z.string(),
+  estimated_cost: z.string(),
+  cost_min: z.number(),
+  cost_max: z.number(),
+  wait_time: z.string(),
+  open_status: z.enum(["open", "closed"]),
+});
 
-    if (!symptoms || !personaId) {
-      return NextResponse.json(
-        { error: "Missing required fields: symptoms and personaId" },
-        { status: 400 }
-      );
-    }
+const claudeResponseSchema = z.object({
+  options: z.array(optionSchema).length(3),
+  severity: z.enum(["low", "moderate", "high"]),
+  symptom_summary: z.string(),
+});
 
-    const persona = personas.find((p) => p.id === personaId);
-    if (!persona) {
-      return NextResponse.json({ error: "Invalid persona ID" }, { status: 404 });
-    }
+const SYSTEM_PROMPT = `You are CareNav, a clinical and financial triage assistant. You help patients pick between three places to get care: an Urgent Care, an Emergency Room, and a Telehealth service.
 
-    // Retrieve RAG context
-    const { context: ragContext, isRagWorking, ragSources } = await retrieveContext(symptoms).catch(() => ({
-      context: "",
-      isRagWorking: false,
-      ragSources: [],
-    }));
+You will receive:
+1. The patient's symptom description in plain English.
+2. The patient's profile (insurance, deductible, copays, coinsurance, location, current time).
+3. A list of three facilities with hours and capabilities.
 
-    // Build facility context strings
-    const facilityContexts = facilities
-      .map((fac) => {
-        const isOpen = calculateIsOpen(fac, persona.simulated_time, persona.simulated_day);
-        const estimatedCost = calculateEstimatedCost(fac, persona);
-        return `ID: ${fac.id} | Name: ${fac.name} | Type: ${fac.type}\nNetwork: ${fac.network_status}\nHours: ${fac.hours_open}-${fac.hours_close} (${fac.days_open.join(",")})\nCurrently: ${isOpen ? "OPEN" : "CLOSED"}\nCapabilities: ${fac.capabilities.join(", ")}\nWait: ~${fac.wait_time_minutes} min\nEstimated cost for this patient: ${estimatedCost}\nAddress: ${fac.address || "On campus"}`;
-      })
-      .join("\n\n");
+Produce exactly three options - one per facility tier ("recommended", "alternative", "not_recommended") - prioritizing in this order:
+- Clinical safety (right level of care for the symptom).
+- Facility availability at the patient's current time (closed = much worse choice).
+- Out-of-pocket cost given the patient's specific plan and remaining deductible.
 
-    const systemPrompt = `You are CareNav, a clinical triage assistant for University of Maryland students and staff. Always prioritize patient safety first, then financial wellbeing.
-
-PATIENT PROFILE:
-Name: ${persona.name}
-Insurance: ${persona.insurance_type} | Deductible Remaining: $${persona.deductible_remaining}
-Urgent Care Copay: $${persona.urgent_care_copay} | ER Copay: $${persona.er_copay}
-Coinsurance: ${persona.coinsurance_percentage}%
-Bank Balance: $${persona.bank_balance}
-Time: ${persona.simulated_day}, ${persona.simulated_time}
-
-FACILITIES:
-${facilityContexts}
-${isRagWorking ? "\nUMD HEALTH RESOURCES:\n" + ragContext : ""}
-
-Return ONLY valid JSON matching this exact schema (no markdown, no extra text):
+You MUST respond with ONLY valid JSON in this shape, no prose, no markdown:
 {
-  "summary": "1-sentence plain English assessment",
-  "emergency_detected": boolean,
-  "thinking": "2-3 sentences of clinical reasoning explaining your recommendation logic",
-  "user_mood": "positive|neutral|negative|curious|frustrated|confused",
-  "matched_categories": ["mental_health|primary_care|sexual_health|wellness|emergency"],
-  "suggested_questions": ["Follow-up Q1?", "Follow-up Q2?", "Follow-up Q3?"],
-  "recommendations": [
+  "severity": "low" | "moderate" | "high",
+  "symptom_summary": "One sentence plain-English summary of what the symptom likely is.",
+  "options": [
     {
-      "rank": 1,
-      "status": "recommended",
-      "facility_id": "f1|f2|f3",
-      "facility_name": "string",
-      "facility_type": "string",
-      "reasoning": "Clinical sentence. Financial sentence.",
-      "estimated_cost": "$XX",
-      "availability": "Open now|Closed - reopens [day] at [time]",
-      "wait_time": "~X minutes",
-      "color": "green|yellow|red",
-      "badge": "Best Option|Alternative|Last Resort"
+      "tier": "recommended" | "alternative" | "not_recommended",
+      "facility_id": "<one of the provided facility ids>",
+      "headline": "Short, decisive label (max ~10 words).",
+      "reasoning": "1-3 sentences explaining clinical fit, hours, and cost in plain English.",
+      "estimated_cost": "Dollar string like $50 or $1,500-$2,100",
+      "cost_min": <number>,
+      "cost_max": <number>,
+      "wait_time": "Plain wait estimate, e.g. ~30 min wait or Closed - opens later",
+      "open_status": "open" | "closed"
     },
-    { "rank": 2, "status": "alternative", ... },
-    { "rank": 3, "status": "not_recommended", ... }
+    ... two more options ...
   ]
 }
 
-CRITICAL RULES:
-- chest pain/can't breathe/unconscious/stroke/severe bleeding/overdose/heart attack -> emergency_detected: true, ER rank 1 with color green
-- If facility is CLOSED at simulated time, note in availability field and lower its rank
-- Always return EXACTLY 3 recommendations covering all 3 facility types
-- Prioritize patient safety over cost savings
-- Be specific with clinical reasoning; mention the patient's name`;
+severity guide: "high" = ER recommended or immediately dangerous, "moderate" = urgent care needed today, "low" = telehealth or can wait.
+Each of the three facilities must appear exactly once. Use the facility ids from the input.`;
 
-    const message = await anthropic.messages.create({
-      model: "claude-3-5-sonnet-latest",
-      max_tokens: 2000,
-      system: systemPrompt,
-      messages: [{ role: "user", content: `Patient symptoms: ${symptoms}` }],
-      temperature: 0.2,
-    });
+function buildUserMessage(
+  symptom: string,
+  persona: Persona,
+): string {
+  const facWithContext = facilities.map((f) => {
+    const open = isFacilityOpen(f, persona.current_time);
+    const cost = estimateCost(f, persona);
+    return {
+      ...f,
+      open_at_current_time: open,
+      cost_estimate_for_persona: cost,
+    };
+  });
 
-    const rawText = message.content[0].type === "text" ? message.content[0].text : "";
+  return `Patient symptom:
+"""
+${symptom}
+"""
 
-    // Parse JSON — strip any accidental markdown fences
-    let parsed: TriageResult;
-    try {
-      const cleaned = rawText.replace(/^```json\n?/i, "").replace(/\n?```$/i, "").trim();
-      parsed = JSON.parse(cleaned);
-    } catch {
-      console.error("Failed to parse AI response:", rawText);
-      return NextResponse.json(
-        { error: "Failed to parse AI response. Please try again." },
-        { status: 500 }
-      );
-    }
+Patient profile:
+${JSON.stringify(persona, null, 2)}
 
-    // Validate required fields
-    if (!parsed.recommendations || !Array.isArray(parsed.recommendations)) {
-      return NextResponse.json(
-        { error: "Invalid AI response structure" },
-        { status: 500 }
-      );
-    }
+Facilities (already evaluated for open status and cost for this patient):
+${JSON.stringify(facWithContext, null, 2)}
 
-    return NextResponse.json(parsed);
-  } catch (error: any) {
-    console.error("Triage API error:", error);
-    return NextResponse.json(
-      { error: error.message || "Internal server error" },
-      { status: 500 }
+Return JSON only.`;
+}
+
+function enrichClaudeResponse(
+  raw: z.infer<typeof claudeResponseSchema>,
+  symptom: string,
+  persona: Persona,
+): TriageResponse {
+  const options = raw.options.map((o) => {
+    const f =
+      facilities.find((x) => x.id === o.facility_id) ?? facilities[0];
+    return {
+      tier: o.tier,
+      facility_id: f.id,
+      facility_name: f.name,
+      facility_type: f.type,
+      network_status: f.network_status,
+      capabilities: f.capabilities,
+      hours_label: f.hours_label,
+      open_status: o.open_status,
+      wait_time: o.wait_time,
+      estimated_cost: o.estimated_cost,
+      cost_min: o.cost_min,
+      cost_max: o.cost_max,
+      headline: o.headline,
+      reasoning: o.reasoning,
+    };
+  });
+
+  const tierOrder = { recommended: 0, alternative: 1, not_recommended: 2 };
+  options.sort((a, b) => tierOrder[a.tier] - tierOrder[b.tier]);
+
+  const recommended = options.find((o) => o.tier === "recommended");
+  const severity: TriageResponse["severity"] =
+    raw.severity ??
+    (recommended?.facility_type === "Emergency Room"
+      ? "high"
+      : recommended?.facility_type === "Telehealth"
+        ? "low"
+        : "moderate");
+
+  return {
+    emergency: false,
+    symptom,
+    persona_id: persona.id,
+    options,
+    generated_by: "claude",
+    severity,
+    symptom_summary: raw.symptom_summary ?? symptom,
+  };
+}
+
+async function callClaude(
+  symptom: string,
+  persona: Persona,
+): Promise<TriageResponse | null> {
+  const apiKey = process.env.ANTHROPIC_API_KEY;
+  if (!apiKey) return null;
+
+  const client = new Anthropic({ apiKey });
+  const model =
+    process.env.CARENAV_MODEL ?? "claude-3-5-sonnet-20241022";
+
+  const response = await client.messages.create({
+    model,
+    max_tokens: 1200,
+    system: SYSTEM_PROMPT,
+    temperature: 0.2,
+    messages: [
+      { role: "user", content: buildUserMessage(symptom, persona) },
+      { role: "assistant", content: "{" },
+    ],
+  });
+
+  const text =
+    "{" +
+    response.content
+      .filter((b): b is Anthropic.TextBlock => b.type === "text")
+      .map((b) => b.text)
+      .join("");
+
+  const cleaned = text.replace(/```json|```/g, "").trim();
+  const parsed = claudeResponseSchema.parse(JSON.parse(cleaned));
+  return enrichClaudeResponse(parsed, symptom, persona);
+}
+
+export async function POST(req: Request) {
+  let body: z.infer<typeof requestSchema>;
+  try {
+    body = requestSchema.parse(await req.json());
+  } catch {
+    return Response.json(
+      { error: "Invalid request body" },
+      { status: 400 },
     );
   }
+
+  const { symptom, personaId } = body;
+  const persona = getPersona(personaId);
+  if (!persona) {
+    return Response.json({ error: "Unknown persona" }, { status: 404 });
+  }
+
+  const guard = detectEmergency(symptom);
+  if (guard.hit) {
+    return Response.json({
+      emergency: true as const,
+      message:
+        "These symptoms can be life-threatening. Call 911 immediately.",
+      matched_keyword: guard.keyword,
+    });
+  }
+
+  try {
+    const claudeResult = await callClaude(symptom, persona);
+    if (claudeResult) return Response.json(claudeResult);
+  } catch (err) {
+    console.warn("[carenav] Claude triage failed, falling back to mock:", err);
+  }
+
+  return Response.json(mockTriage(symptom, persona));
 }
